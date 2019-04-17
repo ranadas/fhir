@@ -1,0 +1,84 @@
+########################################
+# SpringBoot Application Properties
+# mvn spring-boot:run
+########################################
+
+## Application Specific Props
+file.endpoint=file:data?delete=false&noop=true&delay=5000
+file.endpoint.exceptions=file:data/exceptions
+
+## Camel REST Config
+camel.rest.server=localhost
+camel.rest.port=9090
+camel.rest.path=api/fhir
+
+## Should I run in debug mode?
+debug=false
+
+## Allows to run as standalone application
+camel.springboot.main-run-controller=true
+
+## Logging Levels
+logging.level.root=INFO
+logging.level.com.mongodb.healthcare.fhir=INFO
+logging.level.org.mongodb.driver.cluster=DEBUG
+
+#logging.file=/myLogFile.log
+
+## the name of Camel Application
+camel.springboot.name=FHIR-Camel-Application (FHIR R4 Version)
+
+############################
+# Management Config
+############################
+management.endpoint.env.enabled=true
+management.endpoint.info.enabled=true
+management.endpoint.health.enabled=true
+management.endpoint.camelroutes.enabled=true
+management.endpoint.logfile.enabled=true
+management.endpoint.metrics.enabled=true
+management.endpoints.enabled-by-default=true
+management.endpoints.jmx.exposure.include=*
+
+## expose actuator endpoint via HTTP
+management.endpoints.web.exposure.include=env,info,health,camelroutes,logfile,metrics,hawtio,jolokia
+
+## show verbose health details (/actuator/info) so you can see Camel information also
+management.endpoint.health.show-detail=always
+
+## to turn off Camel info in (/actuator/info)
+management.info.camel.enabled=true
+
+## Hawtio Configuration
+## http://localhost:10001/actuator/hawtio/index.html
+hawtio.authenticationEnabled=false
+server.port=10000
+management.server.port=10001
+
+
+############################
+# MONGODB (MongoProperties)
+############################
+spring.autoconfigure.exclude[0]=org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration
+spring.autoconfigure.exclude[1]=org.springframework.boot.autoconfigure.mongo.embedded.EmbeddedMongoAutoConfiguration
+spring.autoconfigure.exclude[2]=org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration
+spring.autoconfigure.exclude[3]=org.springframework.boot.autoconfigure.data.mongo.MongoRepositoriesAutoConfiguration
+
+spring.data.mongodb.uri=myMongoDBUri
+spring.data.mongodb.database=fhirDb
+
+## Whether to enable MongoDB health check.
+management.health.mongo.enabled=true
+
+## Include Spring Dev Tools when debugging
+spring.devtools.add-properties=true
+
+############################
+# INFO Endpoint Props
+############################
+info.app.name=HL7 FHIR Parser
+info.app.description=Application to parse HL7 FHIR Format messages with SpringBoot/Camel/MongoDB/Hapi
+info.app.version=0.0.1
+info.app.fhirversion=FHIR version R4 currently supported
+
+
