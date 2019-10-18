@@ -3,6 +3,7 @@ package com.mongodb.healthcare.fhir.parser;
 
 import ca.uhn.fhir.model.dstu2.valueset.IdentifierTypeCodesEnum;
 import com.mongodb.healthcare.fhir.model.*;
+import org.hl7.fhir.exceptions.FHIRException;
 import org.hl7.fhir.r4.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -226,7 +227,11 @@ public class R4BundleProcessor {
         // Is patient deceased?
         if(patient.hasDeceased()) {
             myPatientModel.setDeceased(true);
-            myPatientModel.setDateDeceased(patient.getDeceasedDateTimeType().getValue());
+            try {
+                myPatientModel.setDateDeceased(patient.getDeceasedDateTimeType().getValue());
+            } catch (FHIRException fe) {
+                logger.error("Error parsing data deceased: " + fe);
+            }
         }
 
         // Marital Status
@@ -414,7 +419,11 @@ public class R4BundleProcessor {
         myMedicationRequest.setMedicationRequestId(medicationRequest.getId().replace("MedicationRequest/", ""));
         myMedicationRequest.setStatus(medicationRequest.getStatus().getDisplay());
         myMedicationRequest.setIntent(medicationRequest.getIntent().getDisplay());
-        myMedicationRequest.setDisplay(medicationRequest.getMedicationCodeableConcept().getText());
+        try {
+            myMedicationRequest.setDisplay(medicationRequest.getMedicationCodeableConcept().getText());
+        } catch (FHIRException fe) {
+            logger.error("Error parsing medicationRequest.display: " + fe);
+        }
         myMedicationRequest.setAuthoredOn(medicationRequest.getAuthoredOn());
 
         this.myMedicationRequests.add(myMedicationRequest);
@@ -433,8 +442,13 @@ public class R4BundleProcessor {
         myProcedureModel.setProcedureId(procedure.getId().replace("Procedure/", ""));
         myProcedureModel.setStatus(procedure.getStatus().getDisplay());
         myProcedureModel.setDisplay(procedure.getCode().getText());
-        myProcedureModel.setPerformedPeriodStart(procedure.getPerformedPeriod().getStart());
-        myProcedureModel.setPerformedPeriodEnd(procedure.getPerformedPeriod().getEnd());
+
+        try {
+            myProcedureModel.setPerformedPeriodStart(procedure.getPerformedPeriod().getStart());
+            myProcedureModel.setPerformedPeriodEnd(procedure.getPerformedPeriod().getEnd());
+        } catch (FHIRException fe) {
+            logger.error("Error parsing procedure start and/or end period: " + fe);
+        }
 
         this.myProcedures.add(myProcedureModel);
     }
@@ -456,16 +470,25 @@ public class R4BundleProcessor {
         myObservationModel.setCodeSystem(observation.getCode().getCodingFirstRep().getSystem());
         myObservationModel.setCode(observation.getCode().getCodingFirstRep().getCode());
         myObservationModel.setCodeDisplay(observation.getCode().getCodingFirstRep().getDisplay());
-        myObservationModel.setEffectiveDate(observation.getEffectiveDateTimeType().getValue());
+
+        try {
+            myObservationModel.setEffectiveDate(observation.getEffectiveDateTimeType().getValue());
+        } catch (FHIRException fe) {
+            logger.error("Error parsing observation.effectivedate: " + fe);
+        }
         myObservationModel.setIssuedDate(observation.getIssued());
 
         // various measurements
-        if (observation.hasValueQuantity()) {
-            Quantity quantity = observation.getValueQuantity();
-            if (quantity != null) {
-                myObservationModel.setValueQuantity(quantity.getValue().doubleValue());
-                myObservationModel.setUnitOfMeasure(quantity.getUnit());
+        try {
+            if (observation.hasValueQuantity()) {
+                Quantity quantity = observation.getValueQuantity();
+                if (quantity != null) {
+                    myObservationModel.setValueQuantity(quantity.getValue().doubleValue());
+                    myObservationModel.setUnitOfMeasure(quantity.getUnit());
+                }
             }
+        } catch (FHIRException fe) {
+            logger.error("Error parsing observation.valuequantity: " + fe);
         }
 
         // multi value, for example blood pressure with diastolic and systolic values
@@ -489,14 +512,19 @@ public class R4BundleProcessor {
                         myBloodPressureObservation.setSystem(myComponent.getCode().getCodingFirstRep().getSystem());
                         myBloodPressureObservation.setCode(myComponent.getCode().getCodingFirstRep().getCode());
                         myBloodPressureObservation.setDisplay(myComponent.getCode().getCodingFirstRep().getDisplay());
-                        if (myComponent.hasValueQuantity()) {
-                            Quantity quantity = myComponent.getValueQuantity();
-                            if (quantity != null) {
-                                myBloodPressureObservation.setValue(quantity.getValue().doubleValue());
-                                myBloodPressureObservation.setUnit(quantity.getUnit());
 
-                                myBloodPressureObservations.add(myBloodPressureObservation);
+                        try {
+                            if (myComponent.hasValueQuantity()) {
+                                Quantity quantity = myComponent.getValueQuantity();
+                                if (quantity != null) {
+                                    myBloodPressureObservation.setValue(quantity.getValue().doubleValue());
+                                    myBloodPressureObservation.setUnit(quantity.getUnit());
+
+                                    myBloodPressureObservations.add(myBloodPressureObservation);
+                                }
                             }
+                        } catch (FHIRException fe) {
+                            logger.error("Error parsing observation.bloodpressure quantity or value: " + fe);
                         }
                     }
                 }

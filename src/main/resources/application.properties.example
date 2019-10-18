@@ -13,7 +13,7 @@ camel.rest.port=9090
 camel.rest.path=api/fhir
 
 ## Should I run in debug mode?
-debug=false
+debug=true
 
 ## Allows to run as standalone application
 camel.springboot.main-run-controller=true
