@@ -3,18 +3,27 @@ package com.mongodb.healthcare.fhir.route;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
-import ca.uhn.fhir.parser.StrictErrorHandler;
+import ca.uhn.fhir.parser.LenientErrorHandler;
+import com.codahale.metrics.MetricRegistry;
 import com.mongodb.healthcare.fhir.db.MyMongoOperations;
 import com.mongodb.healthcare.fhir.model.MyPatientModel;
 import com.mongodb.healthcare.fhir.parser.R4BundleProcessor;
+import org.apache.camel.CamelContext;
+import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.component.metrics.routepolicy.MetricsRegistryService;
+import org.apache.camel.component.metrics.routepolicy.MetricsRoutePolicyFactory;
+import org.apache.camel.spring.boot.CamelContextConfiguration;
 import org.hl7.fhir.r4.model.Bundle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.data.mongodb.core.MongoOperations;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+
 
 @Component
 public class FhirRoute extends RouteBuilder {
@@ -28,12 +37,16 @@ public class FhirRoute extends RouteBuilder {
     // Fhir Context for parser
     private static FhirContext fhirContext = FhirContext.forR4();
 
+    // TODO Implement Camel metrics
+    private int success = 0;
+    private int error = 0;
+
     @Autowired
     private MyMongoOperations myMongoOperations;
 
     // Constructor
     public FhirRoute(){
-
+        logger.info("======== Starting FhirRoute =========");
     }
 
     @Override
@@ -42,9 +55,16 @@ public class FhirRoute extends RouteBuilder {
         // Exceptions
         onException(Exception.class)
                 .log(LoggingLevel.ERROR, "!! Exception !! - ${exception.message} - unable to process")
+                .process(exchange -> {
+                    error++;
+                    this.printStatus();
+                })
                 .handled(true)
                 .useOriginalMessage()
-                .to("{{file.endpoint.exceptions}}");
+                .to("{{file.endpoint.exceptions}}")
+                .to("metrics:counter:error.counter?increment=1")
+                .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(HttpStatus.BAD_REQUEST))
+                .end();
 
         // Rest service configuration
         restConfiguration()
@@ -78,11 +98,15 @@ public class FhirRoute extends RouteBuilder {
 
                     String message = "Inserted MyPatientModel with _id: " + insertedPatientModel.getId();
                     logger.info(message);
+                    success++;
+                    this.printStatus();
 
                     exchange.getIn().setBody(message);
 
                 })
-                .log(LoggingLevel.INFO, logger, "Completed Writing to MongoDB.");
+                .to("metrics:counter:success.counter?increment=1")
+                .log(LoggingLevel.INFO, logger, "Completed Writing to MongoDB.")
+                .end();
 
         // File Route
         from("{{file.endpoint}}")
@@ -99,12 +123,46 @@ public class FhirRoute extends RouteBuilder {
                 .process(exchange -> {
                     String myString = exchange.getIn().getBody(String.class);
                     IParser parser = this.fhirContext.newJsonParser();
-                    parser.setParserErrorHandler(new StrictErrorHandler());
+                    parser.setParserErrorHandler(new LenientErrorHandler());
 
                     Bundle bundle = parser.parseResource(Bundle.class, myString);
 
                     exchange.getIn().setBody(bundle);
                 })
                 .to("direct:processFhirBundle");
+    }
+
+    @Bean
+    MetricRegistry metricRegistry() {
+        return new MetricRegistry();
+    }
+
+    @Bean
+    CamelContextConfiguration contextConfiguration() {
+        return new CamelContextConfiguration() {
+            @Override
+            public void beforeApplicationStart(CamelContext camelContext) {
+                logger.info("Configuring Camel metrics on all routes.");
+                MetricsRoutePolicyFactory metricsRoutePolicyFactory = new MetricsRoutePolicyFactory();
+                metricsRoutePolicyFactory.setMetricsRegistry(metricRegistry());
+                camelContext.addRoutePolicyFactory(metricsRoutePolicyFactory);
+            }
+
+            @Override
+            public void afterApplicationStart(CamelContext camelContext) {
+                //no-op
+            }
+        };
+    }
+
+    private void printStatus() {
+        logger.info("=================");
+        logger.info("Success count: " + success);
+        logger.info("  Error count: " + error);
+        MetricsRegistryService registryService = getContext().hasService(MetricsRegistryService.class);
+        if(registryService != null) {
+            logger.info(registryService.dumpStatisticsAsJson());
+        }
+        logger.info("=================");
     }
 }

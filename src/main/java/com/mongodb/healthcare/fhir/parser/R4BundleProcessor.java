@@ -63,6 +63,8 @@ public class R4BundleProcessor {
      *
      */
     private void parseBundle() {
+        logger.info("Parse Bundle.");
+
         for (Bundle.BundleEntryComponent bundleEntryComponent : bundle.getEntry()) {
             Resource resource = bundleEntryComponent.getResource();
 
