@@ -1,56 +1,22 @@
 package com.mongodb.healthcare.fhir.model;
 
 
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.util.Date;
 
+@NoArgsConstructor
+@Getter
+@Setter
 public class MyMedicationRequest {
 
     private String medicationRequestId;
     private String status;
     private String intent;
     private String display;
-    private java.util.Date authoredOn;
-
-
-    public String getMedicationRequestId() {
-        return medicationRequestId;
-    }
-
-    public void setMedicationRequestId(String medicationRequestId) {
-        this.medicationRequestId = medicationRequestId;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public String getIntent() {
-        return intent;
-    }
-
-    public void setIntent(String intent) {
-        this.intent = intent;
-    }
-
-    public String getDisplay() {
-        return display;
-    }
-
-    public void setDisplay(String display) {
-        this.display = display;
-    }
-
-    public Date getAuthoredOn() {
-        return authoredOn;
-    }
-
-    public void setAuthoredOn(Date authoredOn) {
-        this.authoredOn = authoredOn;
-    }
+    private Date authoredOn;
 
     @Override
     public String toString() {
