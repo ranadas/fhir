@@ -138,13 +138,13 @@ public class FhirRoute extends RouteBuilder {
     }
 
     @Bean
-    CamelContextConfiguration contextConfiguration() {
+    CamelContextConfiguration contextConfiguration(MetricRegistry metricRegistry) {
         return new CamelContextConfiguration() {
             @Override
             public void beforeApplicationStart(CamelContext camelContext) {
                 logger.info("Configuring Camel metrics on all routes.");
                 MetricsRoutePolicyFactory metricsRoutePolicyFactory = new MetricsRoutePolicyFactory();
-                metricsRoutePolicyFactory.setMetricsRegistry(metricRegistry());
+                metricsRoutePolicyFactory.setMetricsRegistry(metricRegistry);
                 camelContext.addRoutePolicyFactory(metricsRoutePolicyFactory);
             }
 

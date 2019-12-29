@@ -9,6 +9,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.util.Date;
 import java.util.List;
 
+import org.hl7.fhir.dstu3.model.Patient;
 @NoArgsConstructor
 @Getter
 @Setter
