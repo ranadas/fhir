@@ -3,6 +3,8 @@ package com.mongodb.healthcare.fhir.parser;
 
 import ca.uhn.fhir.model.dstu2.valueset.IdentifierTypeCodesEnum;
 import com.mongodb.healthcare.fhir.model.*;
+import lombok.Getter;
+import lombok.extern.log4j.Log4j2;
 import org.hl7.fhir.exceptions.FHIRException;
 import org.hl7.fhir.r4.model.*;
 import org.slf4j.Logger;
@@ -13,17 +15,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
-/**
- *
- */
+@Log4j2
 public class R4BundleProcessor {
 
-    // Logger component
-    private static final Logger logger = LoggerFactory.getLogger(R4BundleProcessor.class);
-
+    @Getter
     private Bundle bundle;
-
+    @Getter
     private MyPatientModel myPatientModel;
     private List<MyContactPointModel> myContactPoints;
     private List<MyIdentifierModel> myIdentifiers;
@@ -35,40 +32,34 @@ public class R4BundleProcessor {
     private List<MyMedicationRequest> myMedicationRequests;
     private List<MyProcedureModel> myProcedures;
 
-    /**
-     * @param bundle
-     */
     public R4BundleProcessor(Bundle bundle) {
-        logger.debug("Processing bundle.");
+        log.debug("Processing bundle.");
 
         this.bundle = bundle;
 
         this.myPatientModel = new MyPatientModel();
         this.myPatientModel.setDateBundleParsed(new java.util.Date());
 
-        this.myContactPoints = new ArrayList<MyContactPointModel>();
-        this.myIdentifiers = new ArrayList<MyIdentifierModel>();
-        this.myOrganizations = new ArrayList<MyOrganizationModel>();
-        this.myEncounters = new ArrayList<MyEncounterModel>();
-        this.myPractitioners = new ArrayList<MyPractitionerModel>();
-        this.myConditions = new ArrayList<MyConditionModel>();
-        this.myObservations = new ArrayList<MyObservationModel>();
-        this.myMedicationRequests = new ArrayList<MyMedicationRequest>();
-        this.myProcedures = new ArrayList<MyProcedureModel>();
+        this.myContactPoints = new ArrayList<>();
+        this.myIdentifiers = new ArrayList<>();
+        this.myOrganizations = new ArrayList<>();
+        this.myEncounters = new ArrayList<>();
+        this.myPractitioners = new ArrayList<>();
+        this.myConditions = new ArrayList<>();
+        this.myObservations = new ArrayList<>();
+        this.myMedicationRequests = new ArrayList<>();
+        this.myProcedures = new ArrayList<>();
 
         this.parseBundle();
     }
 
-    /**
-     *
-     */
     private void parseBundle() {
-        logger.info("Parse Bundle.");
+        log.info("Parse Bundle.");
 
         for (Bundle.BundleEntryComponent bundleEntryComponent : bundle.getEntry()) {
             Resource resource = bundleEntryComponent.getResource();
 
-            logger.debug("Found Resource Type: " + resource.fhirType());
+            log.debug("Found Resource Type: " + resource.fhirType());
 
             // Patient
             if (resource instanceof Patient) {
@@ -155,11 +146,8 @@ public class R4BundleProcessor {
         this.myPatientModel.setProcedures(this.myProcedures);
     }
 
-    /**
-     * @param patient
-     */
     private void parsePatient(Patient patient) {
-        logger.debug("Parse patient.");
+        log.debug("Parse patient.");
 
         // Patient Id
         // TODO - Fix id string
@@ -196,7 +184,7 @@ public class R4BundleProcessor {
                     longitude = Double.valueOf(decimalType.getValue().toString());
                 }
                 catch(NumberFormatException nfe) {
-                    logger.error("Longitude parse exception.", nfe);
+                    log.error("Longitude parse exception.", nfe);
                 }
 
                 coordinatesArray[0] = longitude;
@@ -211,7 +199,7 @@ public class R4BundleProcessor {
                     latitude = Double.valueOf(decimalType.getValue().toString());
                 }
                 catch(NumberFormatException nfe) {
-                    logger.error("Latitude parse exception.", nfe);
+                    log.error("Latitude parse exception.", nfe);
                 }
 
                 coordinatesArray[1] = latitude;
@@ -232,7 +220,7 @@ public class R4BundleProcessor {
             try {
                 myPatientModel.setDateDeceased(patient.getDeceasedDateTimeType().getValue());
             } catch (FHIRException fe) {
-                logger.error("Error parsing data deceased: " + fe);
+                log.error("Error parsing data deceased: " + fe);
             }
         }
 
@@ -326,11 +314,8 @@ public class R4BundleProcessor {
         }
     }
 
-    /**
-     * @param organization
-     */
     private void parseOrganization(Organization organization) {
-        logger.debug("Parse Organization.");
+        log.debug("Parse Organization.");
 
         MyOrganizationModel myOrganizationModel = new MyOrganizationModel();
 
@@ -358,11 +343,8 @@ public class R4BundleProcessor {
         this.myOrganizations.add(myOrganizationModel);
     }
 
-    /**
-     * @param practitioner
-     */
     private void parsePractitioner(Practitioner practitioner) {
-        logger.debug("Parse Practitioner.");
+        log.debug("Parse Practitioner.");
 
         MyPractitionerModel myPractitionerModel = new MyPractitionerModel();
 
@@ -375,11 +357,8 @@ public class R4BundleProcessor {
         this.myPractitioners.add(myPractitionerModel);
     }
 
-    /**
-     * @param encounter
-     */
     private void parseEncounter(Encounter encounter) {
-        logger.debug("Parse Encounter.");
+        log.debug("Parse Encounter.");
 
         MyEncounterModel myEncounterModel = new MyEncounterModel();
 
@@ -392,11 +371,8 @@ public class R4BundleProcessor {
         this.myEncounters.add(myEncounterModel);
     }
 
-    /**
-     * @param condition
-     */
     private void parseCondition(Condition condition) {
-        logger.debug("Parse Condition.");
+        log.debug("Parse Condition.");
 
         MyConditionModel myConditionModel = new MyConditionModel();
 
@@ -408,12 +384,8 @@ public class R4BundleProcessor {
         this.myConditions.add(myConditionModel);
     }
 
-    /**
-     *
-     * @param medicationRequest
-     */
     private void parseMedicationRequest(MedicationRequest medicationRequest) {
-        logger.debug("Parse Medication Request.");
+        log.debug("Parse Medication Request.");
 
         MyMedicationRequest myMedicationRequest = new MyMedicationRequest();
 
@@ -424,19 +396,15 @@ public class R4BundleProcessor {
         try {
             myMedicationRequest.setDisplay(medicationRequest.getMedicationCodeableConcept().getText());
         } catch (FHIRException fe) {
-            logger.error("Error parsing medicationRequest.display: " + fe);
+            log.error("Error parsing medicationRequest.display: " + fe);
         }
         myMedicationRequest.setAuthoredOn(medicationRequest.getAuthoredOn());
 
         this.myMedicationRequests.add(myMedicationRequest);
     }
 
-    /**
-     *
-     * @param procedure
-     */
     private void parseProcedure(Procedure procedure) {
-        logger.debug("Parse Procedure.");
+        log.debug("Parse Procedure.");
 
         MyProcedureModel myProcedureModel = new MyProcedureModel();
 
@@ -449,18 +417,14 @@ public class R4BundleProcessor {
             myProcedureModel.setPerformedPeriodStart(procedure.getPerformedPeriod().getStart());
             myProcedureModel.setPerformedPeriodEnd(procedure.getPerformedPeriod().getEnd());
         } catch (FHIRException fe) {
-            logger.error("Error parsing procedure start and/or end period: " + fe);
+            log.error("Error parsing procedure start and/or end period: " + fe);
         }
 
         this.myProcedures.add(myProcedureModel);
     }
 
-    /**
-     *
-     * @param observation
-     */
     private void parseObservation(Observation observation) {
-        logger.debug("Parse Observation.");
+        log.debug("Parse Observation.");
 
         MyObservationModel myObservationModel = new MyObservationModel();
 
@@ -476,7 +440,7 @@ public class R4BundleProcessor {
         try {
             myObservationModel.setEffectiveDate(observation.getEffectiveDateTimeType().getValue());
         } catch (FHIRException fe) {
-            logger.error("Error parsing observation.effectivedate: " + fe);
+            log.error("Error parsing observation.effectivedate: " + fe);
         }
         myObservationModel.setIssuedDate(observation.getIssued());
 
@@ -490,7 +454,7 @@ public class R4BundleProcessor {
                 }
             }
         } catch (FHIRException fe) {
-            logger.error("Error parsing observation.valuequantity: " + fe);
+            log.error("Error parsing observation.valuequantity: " + fe);
         }
 
         // multi value, for example blood pressure with diastolic and systolic values
@@ -526,7 +490,7 @@ public class R4BundleProcessor {
                                 }
                             }
                         } catch (FHIRException fe) {
-                            logger.error("Error parsing observation.bloodpressure quantity or value: " + fe);
+                            log.error("Error parsing observation.bloodpressure quantity or value: " + fe);
                         }
                     }
                 }
@@ -534,26 +498,11 @@ public class R4BundleProcessor {
 
             // add blood pressure if there are values in the list
             if (!myBloodPressureObservations.isEmpty()) {
-                logger.debug("Adding Blood Pressures to Observation.");
+                log.debug("Adding Blood Pressures to Observation.");
                 myObservationModel.setBloodPressure(myBloodPressureObservations);
             }
         }
 
         this.myObservations.add(myObservationModel);
-    }
-
-    /**
-     * @return
-     */
-    public Bundle getBundle() {
-        return this.bundle;
-    }
-
-    /**
-     *
-     * @return
-     */
-    public MyPatientModel getMyPatientModel(){
-        return this.myPatientModel;
     }
 }
